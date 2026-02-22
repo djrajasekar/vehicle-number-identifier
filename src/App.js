@@ -6,8 +6,8 @@ import './App.css';
 
 const bucketName = "vehicle-identifier-bucket"
 const creds = {
-  accessKeyId: "<>",
-  secretAccessKey: "<>",
+  accessKeyId: "",
+  secretAccessKey: "",
 };
 
 const client = new S3Client({
