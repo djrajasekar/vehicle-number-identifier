@@ -4,14 +4,21 @@ import { Upload } from "@aws-sdk/lib-storage";
 import { MdOnlinePrediction } from "react-icons/md";
 import './App.css';
 
-const bucketName = "vehicle-identifier-bucket"
+const bucketName = process.env.REACT_APP_S3_BUCKET || "vehicle-identifier-bucket";
+const awsRegion = process.env.REACT_APP_AWS_REGION || "us-east-1";
+const webSocketUrl = process.env.REACT_APP_WEBSOCKET_URL || "wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/";
+
 const creds = {
-  accessKeyId: "",
-  secretAccessKey: "",
+  accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
 };
 
+if (!creds.accessKeyId || !creds.secretAccessKey) {
+  console.warn("AWS credentials not configured. WebSocket connection may fail. Check .env.local file.");
+}
+
 const client = new S3Client({
-  region: "us-east-1",
+  region: awsRegion,
   signatureVersion: 'v4',
   credentials: creds
 }); 
@@ -26,8 +33,9 @@ function App() {
 
   useEffect(() => {
     console.log('........Connecting to server...........')
-    const webSocket = new WebSocket("test");
-    setWs(webSocket)
+    console.log('WebSocket URL:', webSocketUrl);
+    const webSocket = new WebSocket(webSocketUrl);
+    setWs(webSocket);
 
     return () => {
       if (responseTimeoutRef.current) {

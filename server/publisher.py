@@ -2,7 +2,7 @@ import json
 import boto3
 from botocore.config import Config
 
-callbackUrl = "test" # please replace with your socket API end point
+callbackUrl = "https://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/" # please replace with your socket API end point
 
 def publish(connection_id, data):    
     config = Config(
