@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { MdOnlinePrediction } from "react-icons/md";
@@ -6,15 +6,15 @@ import './App.css';
 
 const bucketName = "vehicle-identifier-bucket"
 const creds = {
-  accessKeyId: "",
-  secretAccessKey: "",
+  accessKeyId: "AKIAY3CRXOHOJYNO37CK",
+  secretAccessKey: "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",
 };
 
 const client = new S3Client({
   region: "us-east-1",
   signatureVersion: 'v4',
   credentials: creds
-});
+}); 
 
 function App() {
   const [image, setImage] = useState(null);
@@ -22,50 +22,79 @@ function App() {
   const [ws, setWs] = useState(undefined);
   const [numberPlate, setNumberPlate] = useState("");
   const [socketStatusColour, setSocketStatusColour] = useState("grey")
+  const responseTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    console.log('........Connecting to server...........')
+    const webSocket = new WebSocket("wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/");
+    setWs(webSocket)
+
+    return () => {
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
+      webSocket.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (!ws) {
-      console.log('........Connecting to server...........')
-      const webSocket = new WebSocket("wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/");
-      setWs(webSocket)
-    } else {
-      setSocketStatusColour("grey")
+      return;
     }
-  }, []);
 
-
-  if (ws) {
     ws.onopen = (event) => {
       console.log('Connection established', event)
       setSocketStatusColour("green")
     };
+
     ws.onmessage = function (event) {
       console.log(`event`, event)
       try {
+        if (responseTimeoutRef.current) {
+          clearTimeout(responseTimeoutRef.current);
+          responseTimeoutRef.current = null;
+        }
         const data = JSON.parse(event.data);
         console.log('Number:', data.message)
-        setMessage("")
+        setMessage("Completed")
         setNumberPlate(`Number plate: ${data.message}`);
 
       } catch (err) {
         console.log(err);
       }
     };
-  }
 
-  const processImage = async (event) => {
+    ws.onerror = (event) => {
+      console.log('WebSocket error', event);
+      setSocketStatusColour("red");
+      setMessage("WebSocket error while processing image");
+    };
+
+    ws.onclose = (event) => {
+      console.log('WebSocket closed', event);
+      setSocketStatusColour("grey");
+    };
+  }, [ws]);
+
+  const processImage = async (event) => {  
+    const selectedImage = event.target.files?.[0];
+    if (!selectedImage) {
+      return;
+    }
+
     setNumberPlate(`Number plate: .....`);
-    setImage(event.target.files[0])
+    setImage(selectedImage)
+    setMessage("Uploading... 0%")
 
-    const uploadResult = await uploadFileToS3(event.target.files[0])
+    const uploadResult = await uploadFileToS3(selectedImage)
     if (uploadResult) {
-      const imageName = event.target.files[0].name;
+      const imageName = selectedImage.name;
       await sendMessage(imageName);
     }
   }
 
   const uploadFileToS3 = async (image) => {
-    setMessage("Uploading......")
+    setMessage("Uploading... 0%")
     const target = { Bucket: bucketName, Key: image.name, Body: image };
     try {
       const parallelUploads3 = new Upload({
@@ -78,13 +107,21 @@ function App() {
 
       parallelUploads3.on("httpUploadProgress", (progress) => {
         console.log("progress:", progress);
+        const loaded = progress?.loaded || 0;
+        const total = progress?.total || image.size || 0;
+
+        if (total > 0) {
+          const percent = Math.min(100, Math.round((loaded / total) * 100));
+          setMessage(`Uploading... ${percent}%`);
+        } else {
+          setMessage("Uploading...");
+        }
       });
 
-      var result = await parallelUploads3.done();
+      await parallelUploads3.done();
+      console.log('Upload done. Next step: send message to websocket');
 
       setMessage("Upload is done")
-
-      // console.log('Result:', result);
       return true;
 
     } catch (e) {
@@ -96,20 +133,36 @@ function App() {
 
   const sendMessage = async (imageName) => {
     try {
-      if (ws) {
-        setMessage(`Sending image ${imageName} info....`)
-
-        const result = await ws.send(JSON.stringify({
-          "action": "sendVehicleInfo",
-          "message": { "bucket": bucketName, "key": imageName }
-        }));
-
-        console.log('result', result)
-        setMessage("Processing image....")
+      if (!ws) {
+        setMessage("WebSocket is not connected")
+        return;
       }
+
+      if (ws.readyState !== WebSocket.OPEN) {
+        setMessage("WebSocket not ready yet. Please try again in a moment")
+        return;
+      }
+
+      setMessage(`Sending image ${imageName} info....`)
+
+      const payload = {
+        "action": "sendVehicleInfo",
+        "message": { "bucket": bucketName, "key": imageName }
+      };
+
+      ws.send(JSON.stringify(payload));
+      console.log('Message sent to websocket:', payload)
+
+      setMessage("Processing image....")
+
+      responseTimeoutRef.current = setTimeout(() => {
+        setMessage("No response from server yet. Check backend logs.");
+        console.log('No websocket response received within timeout window');
+      }, 15000);
     }
     catch (err) {
       console.log("error", err)
+      setMessage("Failed to send message to websocket")
     }
 
   }
