@@ -26,7 +26,7 @@ function App() {
 
   useEffect(() => {
     console.log('........Connecting to server...........')
-    //const webSocket = new WebSocket("wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/");
+    const webSocket = new WebSocket("test");
     setWs(webSocket)
 
     return () => {
