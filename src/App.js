@@ -6,8 +6,8 @@ import './App.css';
 
 const bucketName = "vehicle-identifier-bucket"
 const creds = {
-  accessKeyId: "AKIAY3CRXOHOJYNO37CK",
-  secretAccessKey: "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",
+  //accessKeyId: "AKIAY3CRXOHOJYNO37CK",
+  //secretAccessKey: "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",
 };
 
 const client = new S3Client({
@@ -26,7 +26,7 @@ function App() {
 
   useEffect(() => {
     console.log('........Connecting to server...........')
-    const webSocket = new WebSocket("wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/");
+    //const webSocket = new WebSocket("wss://mwtqeze40m.execute-api.us-east-1.amazonaws.com/dev-vehicle/");
     setWs(webSocket)
 
     return () => {
