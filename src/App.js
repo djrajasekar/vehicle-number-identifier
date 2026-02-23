@@ -181,7 +181,7 @@ function App() {
         <h3>Vehicle Number Plate Recognition System</h3>
         <div id="web-socket-status"> <MdOnlinePrediction color={socketStatusColour} size={100} /></div>
         {
-          image === null ? <div></div> : <img src={URL.createObjectURL(image)} style={{ height: 400, width: 400 }} />
+          image === null ? <div></div> : <img src={URL.createObjectURL(image)} alt="Selected vehicle image for number plate recognition" style={{ height: 400, width: 400 }} />
         }
 
         <br></br>
