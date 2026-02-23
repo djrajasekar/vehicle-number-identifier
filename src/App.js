@@ -232,7 +232,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         {/* Application title */}
-        <h3>Vehicle Number Plate Recognition System</h3>
+        <h1>Vehicle Number Plate Recognition System</h1>
         
         {/* WebSocket connection status indicator (grey=disconnected, green=connected, red=error) */}
         <div id="web-socket-status"> 
@@ -241,21 +241,21 @@ function App() {
         
         {/* Image preview - only shown after user selects a file */}
         {
-          image === null ? <div></div> : <img src={URL.createObjectURL(image)} alt="Selected vehicle for number plate recognition" style={{ height: 400, width: 400 }} />
+          image === null ? <div></div> : <img className="preview-image" src={URL.createObjectURL(image)} alt="Selected vehicle for number plate recognition" />
         }
 
         <br></br>
         
         {/* File input - triggers processImage() when user selects an image */}
-        <input type="file" onChange={processImage} />
+        <input className="file-input" type="file" accept="image/*" onChange={processImage} />
         
         <hr />
         
         {/* Status message display (uploading progress, processing status, errors) */}
-        <label id="message">{message}</label>
+        <div id="message" className="message-box">{message || "Upload an image to start"}</div>
         
         {/* Detected number plate result displayed here after backend processes image */}
-        <label id="numberPlate">{numberPlate}</label>
+        <div id="numberPlate" className="number-plate-box">{numberPlate || "Number plate result will appear here"}</div>
       </header>
     </div>
   );

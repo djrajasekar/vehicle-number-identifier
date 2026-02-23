@@ -1,38 +1,79 @@
 .App {
+  min-height: 100vh;
   text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #eef4ff 0%, #dbeafe 100%);
+  padding: 24px;
 }
 
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+  background-color: #ffffff;
+  width: min(760px, 100%);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 28px 24px;
+  color: #0f172a;
 }
 
-.App-link {
-  color: #61dafb;
+.App-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  color: #0b3b91;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.preview-image {
+  height: min(360px, 55vw);
+  width: min(360px, 55vw);
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid #cbd5e1;
+}
+
+.file-input {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  width: min(420px, 90%);
+}
+
+#web-socket-status {
+  padding: 8px;
+  border-radius: 999px;
+  background-color: #f1f5f9;
+}
+
+hr {
+  width: min(520px, 92%);
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  margin: 8px 0;
+}
+
+.message-box,
+.number-plate-box {
+  width: min(520px, 92%);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 1rem;
+}
+
+.message-box {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.number-plate-box {
+  background-color: #dcfce7;
+  border: 1px solid #86efac;
+  color: #14532d;
+  font-weight: 700;
 }
