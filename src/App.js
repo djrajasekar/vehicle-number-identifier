@@ -34,7 +34,7 @@ function App() {
   // ----------------
   const [image, setImage] = useState(null); // Stores the selected image file for preview
   const [message, setMessage] = useState(""); // Status messages shown to user (uploading, processing, etc.)
-  const [ws, setWs] = useState(undefined); // WebSocket connection object for real-time communication
+  const [ws, setWs] = useState(undefined); // WebSocket connection object ffor real-time communication
   const [numberPlate, setNumberPlate] = useState(""); // Detected number plate result from backend
   const [socketStatusColour, setSocketStatusColour] = useState("grey") // WebSocket connection indicator color (grey=disconnected, green=connected, red=error)
   const responseTimeoutRef = useRef(null); // Timer to detect if backend doesn't respond within 15 seconds
