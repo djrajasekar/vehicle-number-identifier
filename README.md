@@ -2,6 +2,25 @@
 
 A real-time vehicle number plate recognition system built with React and AWS services. The application allows users to upload vehicle images and automatically detects and extracts number plate information using AWS Rekognition OCR technology.
 
+## 📚 Table of Contents
+
+- [🚗 Project Overview](#-project-overview)
+- [✨ Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [📋 Prerequisites](#-prerequisites)
+- [🚀 Installation & Setup](#-installation--setup)
+- [💻 Usage](#-usage)
+- [🔌 WebSocket Connection Status](#-websocket-connection-status)
+- [📁 Project Structure](#-project-structure)
+- [🚀 Deployment](#-deployment)
+- [🔒 Security Best Practices](#-security-best-practices)
+- [🛠️ Technologies Used](#️-technologies-used)
+- [📝 Code Documentation](#-code-documentation)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📜 License](#-license)
+- [👤 Author](#-author)
+- [🙏 Acknowledgments](#-acknowledgments)
+
 ## 🚗 Project Overview
 
 This project demonstrates a serverless architecture for automated vehicle number plate recognition. Users upload vehicle images through a web interface, which are processed in real-time using AWS cloud services. The system provides instant feedback with detected number plate information.
@@ -17,6 +36,22 @@ This project demonstrates a serverless architecture for automated vehicle number
 - **Cloud Storage**: Images stored securely in AWS S3
 
 ## 🏗️ Architecture
+
+### Architecture Diagram
+
+```mermaid
+flowchart LR
+  U[User Browser] --> FE[React Frontend]
+  FE -->|Upload Vehicle Image| S3[(AWS S3\nvehicle-identifier-bucket)]
+  FE -->|Send bucket/key via WebSocket| APIGW[AWS API Gateway\nWebSocket]
+  APIGW -->|Invoke| L[Lambda\nlambda_function.py]
+  L -->|Read image| S3
+  L -->|Detect text| R[AWS Rekognition\nDetectText]
+  L -->|Publish result| P[Lambda\npublisher.py]
+  P -->|post_to_connection| APIGW
+  APIGW -->|Detected number plate| FE
+  FE -->|Display result| U
+```
 
 ### Frontend
 - **Framework**: React 19.2.4
