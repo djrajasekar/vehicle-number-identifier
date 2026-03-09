@@ -8,8 +8,26 @@ Author: DJ Rajasekar
 Project: vehicle-number-identifier
 """
 
-import boto3, json
+import boto3, json, re
 from publisher import publish
+
+# US state names are frequent false positives on license plates (e.g. VIRGINIA)
+US_STATE_NAMES = {
+    "ALABAMA", "ALASKA", "ARIZONA", "ARKANSAS", "CALIFORNIA", "COLORADO",
+    "CONNECTICUT", "DELAWARE", "FLORIDA", "GEORGIA", "HAWAII", "IDAHO",
+    "ILLINOIS", "INDIANA", "IOWA", "KANSAS", "KENTUCKY", "LOUISIANA",
+    "MAINE", "MARYLAND", "MASSACHUSETTS", "MICHIGAN", "MINNESOTA",
+    "MISSISSIPPI", "MISSOURI", "MONTANA", "NEBRASKA", "NEVADA",
+    "NEWHAMPSHIRE", "NEWJERSEY", "NEWMEXICO", "NEWYORK", "NORTHCAROLINA",
+    "NORTHDAKOTA", "OHIO", "OKLAHOMA", "OREGON", "PENNSYLVANIA",
+    "RHODEISLAND", "SOUTHCAROLINA", "SOUTHDAKOTA", "TENNESSEE", "TEXAS",
+    "UTAH", "VERMONT", "VIRGINIA", "WASHINGTON", "WESTVIRGINIA",
+    "WISCONSIN", "WYOMING", "DISTRICTOFCOLUMBIA"
+}
+
+NOISE_WORDS = {
+    "VIEW", "GALLERY", "PARKING", "RESIDENT", "RESTAURANT"
+}
 
 # Initialize S3 client for accessing uploaded vehicle images
 s3_client = boto3.client('s3', "us-east-1")
@@ -90,12 +108,12 @@ def extract_number_plate(bucket, key):
     Returns:
         str: Detected number plate or error message if not found
     """
-    list = get_detected_text_list(bucket, key)
-    print('List', list)
+    detected_plate_list = get_detected_text_list(bucket, key)
+    print('List', detected_plate_list)
     
     # Return first valid number plate found, or error message
-    if(list != None and len(list) > 0):
-        return list[0]
+    if(detected_plate_list != None and len(detected_plate_list) > 0):
+        return detected_plate_list[0]
     return "Unable to find number"
 
 
@@ -138,12 +156,28 @@ def get_detected_text_list(bucket, key):
     
     # Filter and validate detected text to find number plates
     list_of_detected_text = []
+    candidate_scores = {}
     if(list_of_detected_object != None):
         for item in list_of_detected_object:
-            # Validate each detected text (checks format, length, etc.)
+            # Validate each detected text (checks format, characters, known false positives)
             validated_text = validate_detected_text(item["DetectedText"])
             if(validated_text != None):
-                list_of_detected_text.append(validated_text)
+                confidence = item.get("Confidence", 0)
+                text_type = item.get("Type", "")
+                score = confidence + (5 if text_type == "LINE" else 0)
+                existing_score = candidate_scores.get(validated_text)
+                if(existing_score is None or score > existing_score):
+                    candidate_scores[validated_text] = score
+
+    if(candidate_scores):
+        # Highest confidence candidate is most likely the actual license plate.
+        list_of_detected_text = [
+            text for text, _ in sorted(
+                candidate_scores.items(),
+                key=lambda pair: pair[1],
+                reverse=True
+            )
+        ]
 
     return list_of_detected_text
 
@@ -155,9 +189,11 @@ def get_detected_text_list(bucket, key):
 def validate_detected_text(text):
     """Validate if detected text matches number plate format
     
-    Current validation logic:
-    - Text must be exactly 8 characters long (common number plate length)
-    - Leading/trailing whitespace is removed
+    Validation logic:
+    - Normalizes text to uppercase alphanumeric
+    - Rejects state names/common non-plate words
+    - Requires both letters and digits
+    - Accepts typical plate lengths (5-8 chars)
     
     Note: This is a simple validation. For production, consider:
     - Regex patterns for specific country formats (e.g., XX00XXXX)
@@ -171,11 +207,19 @@ def validate_detected_text(text):
     Returns:
         str: Validated number plate text, or None if invalid
     """
-    # Remove leading/trailing whitespace
-    text = text.strip()
-    
-    # Check if length matches expected number plate format (8 characters)
-    if(len(text) != 8):
+    # Normalize text: uppercase and keep only alphanumeric characters.
+    compact_text = re.sub(r'[^A-Z0-9]', '', text.strip().upper())
+
+    if(len(compact_text) < 5 or len(compact_text) > 8):
         return None
-    
-    return text
+
+    if(compact_text in US_STATE_NAMES or compact_text in NOISE_WORDS):
+        return None
+
+    # License plates are typically alphanumeric; reject pure words or pure numbers.
+    has_alpha = any(ch.isalpha() for ch in compact_text)
+    has_digit = any(ch.isdigit() for ch in compact_text)
+    if(not has_alpha or not has_digit):
+        return None
+
+    return compact_text
